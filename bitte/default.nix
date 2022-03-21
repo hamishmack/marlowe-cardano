@@ -55,4 +55,6 @@ in
   wbe = pkgs.callPackage ./wbe.nix { inherit cardano-wallet wait-for-socket; };
 
   chain-index = pkgs.callPackage ./chain-index.nix { inherit plutus-chain-index wait-for-socket; };
+
+  node-socat = pkgs.callPackage ./node-socat.nix { inherit wait-for-socket; };
 }
