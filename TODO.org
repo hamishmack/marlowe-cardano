@@ -10,3 +10,4 @@
 - healthcheck for node services
 - Run socat security reasoning by node/ops team
 - Healthcheck for node-socat (just, is it accepting connnections?)
+- Automate deployment of private testnet services

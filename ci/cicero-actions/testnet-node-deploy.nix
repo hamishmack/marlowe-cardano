@@ -79,10 +79,10 @@
                   "${flakeBase}#node"
                 ];
 
-                environment.NODE_STATE_DIR = state-dir;
-
                 command = [ "/bin/entrypoint" ];
               };
+
+              env.NODE_STATE_DIR = state-dir;
 
               service = {
                 port = "node";
@@ -130,9 +130,9 @@
                 packages = [ "${flakeBase}#chainIndex" ];
 
                 command = [ "/bin/entrypoint" ];
-
-                environment.INDEX_STATE_DIR = state-dir;
               };
+
+              env.INDEX_STATE_DIR = state-dir;
 
               service = {
                 port = "index";
