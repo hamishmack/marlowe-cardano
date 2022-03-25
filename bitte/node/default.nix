@@ -9,7 +9,7 @@ in
 writeShellScriptBin "entrypoint" ''
   set -eEuo pipefail
 
-  export PATH="${lib.makeBinPath [ coreutils cardano-node ]}"
+  export PATH="${lib.makeBinPath [ coreutils cardano-node ]}":$PATH
 
   rm -fR $NODE_STATE_DIR/db
 
