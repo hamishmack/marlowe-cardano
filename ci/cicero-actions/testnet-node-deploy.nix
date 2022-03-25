@@ -127,7 +127,7 @@
               };
 
               config = {
-                packages = [ "${flakeBase}#chainIndex" ];
+                packages = [ "${flakeBase}#chain-index" ];
 
                 command = [ "/bin/entrypoint" ];
               };
