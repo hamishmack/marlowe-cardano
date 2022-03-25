@@ -7,5 +7,5 @@ writeShellScriptBin "node-socat" ''
 
   wait-for-socket ''${NOMAD_ALLOC_DIR}/node.sock
 
-  exec socat TCP-LISTEN:bind=''${NOMAD_ADDR_node_socat} UNIX-CONNECT:''${NOMAD_ALLOC_DIR}/node.sock
+  exec socat TCP-LISTEN:''${NOMAD_PORT_node_socat},bind=''${NOMAD_IP_node_socat} UNIX-CONNECT:''${NOMAD_ALLOC_DIR}/node.sock
 ''
