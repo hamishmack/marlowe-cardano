@@ -11,5 +11,7 @@ writeShellScriptBin "entrypoint" ''
 
   export PATH="${lib.makeBinPath [ coreutils cardano-node ]}"
 
+  rm -fR $NODE_STATE_DIR/db
+
   exec cardano-node run --topology ${config-dir}/topology.yaml --database-path "$NODE_STATE_DIR/db" --socket-path "$NOMAD_ALLOC_DIR/node.sock" --config ${config-dir}/config.json  --port "$NOMAD_PORT_node"
 ''
