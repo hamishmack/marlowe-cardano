@@ -76,6 +76,8 @@
 
               config = {
                 packages = [
+                  "${flakeBase}#bash"
+                  "${flakeBase}#cacert"
                   "${flakeBase}#node"
                 ];
 

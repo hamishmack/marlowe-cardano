@@ -11,6 +11,8 @@ writeShellScriptBin "entrypoint" ''
 
   export PATH="${lib.makeBinPath [ coreutils cardano-node curl gzip gnutar ]}"
 
+  export SSL_CERT_FILE="/etc/ssl/certs/ca-bundle.crt"
+
   rm -fR "$NODE_STATE_DIR/db"
 
   curl https://public-chain-db-backups.s3.us-west-2.amazonaws.com/marlowe/node-20220322a.tar.gz | gunzip | tar x
