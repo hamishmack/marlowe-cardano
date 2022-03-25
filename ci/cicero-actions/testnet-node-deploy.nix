@@ -41,6 +41,7 @@
           };
 
           task = {
+/*
             node-socat = {
               driver = "nix";
 
@@ -61,7 +62,7 @@
                 tags = [ "marlowe-testnet" ];
               };
             };
-
+*/
             node = let state-dir = "/var/lib/marlowe/private-testnet/cardano-node"; in {
               driver = "nix";
 
@@ -94,7 +95,7 @@
                 tags = [ "marlowe-testnet" ];
               };
             };
-
+/*
             wbe = {
               driver = "nix";
 
@@ -144,6 +145,7 @@
                 tags = [ "marlowe-testnet" ];
               };
             };
+*/
           };
         };
       };
