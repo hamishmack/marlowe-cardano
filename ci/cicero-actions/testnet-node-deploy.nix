@@ -77,11 +77,6 @@
 
               config = {
                 packages = [
-                  (pkg "bash")
-                  (pkg "cacert")
-                  (pkg "gzip")
-                  (pkg "gnutar")
-                  (pkg "curl")
                   "${flakeBase}#node"
                 ];
 
