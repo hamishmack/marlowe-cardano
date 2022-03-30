@@ -29,14 +29,15 @@ import Cardano.Api (AddressAny, ConsensusModeParams (CardanoModeParams), EpochSl
 import Control.Monad (when)
 import Control.Monad.Except (MonadError, MonadIO, liftIO, throwError)
 import Data.Maybe (fromMaybe)
-import Language.Marlowe.CLI.Command.Parse (parseAddressAny, parseCurrencySymbol, parseInput, parseNetworkId,
+import Language.Marlowe.CLI.Command.Parse (parseAddressAny, parseCurrencySymbol, parseInputContent, parseNetworkId,
                                            parsePOSIXTime, parseStakeAddressReference, parseTokenName, parseTxIn,
                                            parseTxOut)
 import Language.Marlowe.CLI.Run (initializeTransaction, prepareTransaction, runTransaction, withdrawFunds)
 import Language.Marlowe.CLI.Transaction (querySlotConfig)
 import Language.Marlowe.CLI.Types (CliError)
 import Language.Marlowe.Client (defaultMarloweParams, marloweParams)
-import Language.Marlowe.Semantics.Types (Input)
+import Language.Marlowe.Semantics.Types (InputContent)
+import Ledger.TimeSlot (SlotConfig (..))
 import Plutus.V1.Ledger.Api (CurrencySymbol, POSIXTime (..), TokenName, defaultCostModelParams)
 
 import qualified Cardano.Api as Api (Value)
@@ -60,12 +61,12 @@ data RunCommand =
     -- | Prepare a Marlowe transaction for execution.
   | Prepare
     {
-      marloweInFile :: FilePath        -- ^ The JSON file with Marlowe initial state and initial contract.
-    , inputs'       :: [Input]         -- ^ The contract's inputs.
-    , minimumTime   :: POSIXTime       -- ^ The first valid time for the transaction.
-    , maximumTime   :: POSIXTime       -- ^ The last valid time for the transaction.
-    , outputFile    :: Maybe FilePath  -- ^ The output JSON file with the results of the computation.
-    , printStats    :: Bool            -- ^ Whether to print statistics about the redeemer.
+      marloweInFile :: FilePath                         -- ^ The JSON file with Marlowe initial state and initial contract.
+    , inputs'       :: [(InputContent, Maybe FilePath)] -- ^ The contract's inputs, with a stub contract for a merkleized action.
+    , minimumTime   :: POSIXTime                        -- ^ The first valid time for the transaction.
+    , maximumTime   :: POSIXTime                        -- ^ The last valid time for the transaction.
+    , outputFile    :: Maybe FilePath                   -- ^ The output JSON file with the results of the computation.
+    , printStats    :: Bool                             -- ^ Whether to print statistics about the redeemer.
     }
     -- | Run a Marlowe transaction.
   | Run
@@ -141,7 +142,9 @@ runRunCommand command =
                             printStats
       Prepare{..}    -> prepareTransaction
                           marloweInFile
-                          inputs' minimumTime maximumTime
+                          inputs'
+                          minimumTime
+                          maximumTime
                           outputFile
                           printStats
       Run{..}        -> guardMainnet
@@ -216,7 +219,7 @@ prepareOptions :: O.Parser RunCommand
 prepareOptions =
   Prepare
     <$> O.strOption                (O.long "marlowe-file"      <> O.metavar "MARLOWE_FILE"  <> O.help "JSON input file for the Marlowe state and contract.")
-    <*> O.many parseInput
+    <*> O.many parseInputContent
     <*> O.option parsePOSIXTime    (O.long "invalid-before"    <> O.metavar "POSIX_TIME"    <> O.help "Minimum time for the input, in POSIX milliseconds." )
     <*> O.option parsePOSIXTime    (O.long "invalid-hereafter" <> O.metavar "POSIX_TIME"    <> O.help "Maximum time for the input, in POSIX milliseconds." )
     <*> (O.optional . O.strOption) (O.long "out-file"          <> O.metavar "OUTPUT_FILE"   <> O.help "JSON output file for contract."                     )

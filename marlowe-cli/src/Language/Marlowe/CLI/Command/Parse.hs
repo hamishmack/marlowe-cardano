@@ -18,9 +18,7 @@ module Language.Marlowe.CLI.Command.Parse (
 , parseOutputQuery
 , parseByteString
 , parseCurrencySymbol
-, parseInput
 , parseInputContent
-, parseMarloweClientInput
 , parseLovelaceValue
 , parseNetworkId
 , parseRole
@@ -48,11 +46,12 @@ import Cardano.Api (AddressAny, AsType (AsAddressAny, AsPolicyId, AsStakeAddress
                     StakeAddressReference (..), TxId (..), TxIn (..), TxIx (..), Value, deserialiseAddress,
                     deserialiseFromRawBytesHex, lovelaceToValue, quantityToLovelace, valueFromList)
 import Cardano.Api.Shelley (StakeAddress (..), fromShelleyStakeCredential)
-import Control.Applicative ((<|>))
+import Control.Applicative (liftA2, (<|>))
 import Data.List.Split (splitOn)
 import Language.Marlowe.CLI.Types (OutputQuery (..))
 import Language.Marlowe.Client (MarloweClientInput (..))
 import Language.Marlowe.Semantics.Types (ChoiceId (..), Input (..), InputContent (..), Party (..), Token (..))
+import qualified Language.Marlowe.Extended as E (Timeout (..))
 import Ledger (POSIXTime (..))
 import Plutus.V1.Ledger.Ada (adaSymbol, adaToken)
 import Plutus.V1.Ledger.Api (BuiltinByteString, CurrencySymbol (..), PubKeyHash (..), TokenName (..), toBuiltin)
@@ -294,19 +293,9 @@ parseByteString =
 
 
 -- | Parse input to a contract.
-parseMarloweClientInput :: O.Parser MarloweClientInput
-parseMarloweClientInput = ClientInput <$> parseInputContent
-
-
--- | Parse input to a contract.
-parseInput :: O.Parser Input
-parseInput = NormalInput <$> parseInputContent
-
-
--- | Parse input to a contract.
-parseInputContent :: O.Parser InputContent
+parseInputContent :: O.Parser (InputContent, Maybe FilePath)
 parseInputContent =
-  parseDeposit <|> parseChoice <|> parseNotify
+  liftA2 (,) (parseDeposit <|> parseChoice <|> parseNotify) parseFilePath
     where
       parseDeposit =
         IDeposit
@@ -325,6 +314,9 @@ parseInputContent =
       parseNotify =
         INotify
           <$ O.flag' () (O.long "notify" <> O.help "Notify the contract.")
+      parseFilePath =
+        (O.optional . O.strOption) (O.long "contract-stub-file" <> O.metavar "CONTRACT_FILE" <> O.help "The contract stub for merkelized actions.")
+
 
 
 -- | Parse a URL.
