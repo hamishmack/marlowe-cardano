@@ -42,15 +42,19 @@
 
           task = {
             node-socat = {
-              driver = "nix";
+              driver = "exec";
 
               resources = {
                 memory = 1024;
               };
 
               config = {
-                packages = [
+                flake_deps = [
                   "${flakeBase}#node-socat"
+                  (pkg "bash")
+                  (pkg "coreutils")
+                  (pkg "tmux")
+                  (pkg "magic-wormhole")
                 ];
 
                 command = [ "/bin/node-socat" ];
