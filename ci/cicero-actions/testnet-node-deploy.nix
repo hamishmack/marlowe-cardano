@@ -63,7 +63,7 @@
             };
 
             node = let state-dir = "/var/lib/marlowe/private-testnet/cardano-node"; in {
-              driver = "nix";
+              driver = "exec";
 
               resources.memory = 4096;
 
@@ -75,8 +75,12 @@
               };
 
               config = {
-                packages = [
+                flake_deps = [
                   "${flakeBase}#node"
+                  (pkg "bash")
+                  (pkg "coreutils")
+                  (pkg "tmux")
+                  (pkg "magic-wormhole")
                 ];
 
                 command = [ "/bin/entrypoint" ];
