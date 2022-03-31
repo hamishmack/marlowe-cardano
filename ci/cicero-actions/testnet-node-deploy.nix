@@ -41,6 +41,7 @@
           };
 
           task = {
+/*
             node-socat = {
               driver = "nix";
 
@@ -61,7 +62,7 @@
                 tags = [ "marlowe-testnet" ];
               };
             };
-
+*/
             node = let state-dir = "/var/lib/marlowe/private-testnet/cardano-node"; in {
               driver = "exec";
 
@@ -77,6 +78,7 @@
               config = {
                 flake_deps = [
                   "${flakeBase}#node"
+                  "${flakeBase}#wait-for-socket"
                   (pkg "bash")
                   (pkg "coreutils")
                   (pkg "tmux")
@@ -93,7 +95,7 @@
                 tags = [ "marlowe-testnet" ];
               };
             };
-
+/*
             wbe = {
               driver = "nix";
 
@@ -143,6 +145,7 @@
                 tags = [ "marlowe-testnet" ];
               };
             };
+*/
           };
         };
       };
