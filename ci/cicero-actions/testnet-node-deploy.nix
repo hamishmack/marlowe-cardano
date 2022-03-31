@@ -83,7 +83,7 @@
                   (pkg "magic-wormhole")
                 ];
 
-                command = [ "/bin/entrypoint" ];
+                command = "/bin/entrypoint";
               };
 
               env.NODE_STATE_DIR = state-dir;
