@@ -71,10 +71,11 @@ pkgs/.stack
 # Frontend files (NPM/Yarn, Spago, etc.)
 # N.B. officially we use NPM; ignoring Yarn files allows the local use of Yarn for those that want
 **/generated-docs/
-**/node_modules/
+**/node_modules
 **/output/
 **/yarn-error.log
 **/yarn.lock
+!e2e/yarn.lock
 **/.psci_modules/
 **/.spago/
 **/.spago2nix/
@@ -118,3 +119,6 @@ plutus-pab/test-node/alonzo-purple/db
 
 # Arion
 *.tmp-arion-docker*
+
+# Testing
+e2e/reports
