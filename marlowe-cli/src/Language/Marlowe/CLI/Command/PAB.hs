@@ -28,7 +28,7 @@ import Language.Marlowe.CLI.Command.Parse (parseInputContent, parsePOSIXTime, pa
 import Language.Marlowe.CLI.PAB (callApplyInputs, callCreate, callFollow, callRedeem, runApp, runCompanion, runFollower,
                                  stop)
 import Language.Marlowe.CLI.Types (CliError (..))
-import Language.Marlowe.SemanticsTypes (InputContent)
+import Language.Marlowe.Semantics.Types (InputContent)
 import Network.HTTP.Client (defaultManagerSettings, newManager)
 import Network.Socket (withSocketsDo)
 import Network.WebSockets (runClient)
