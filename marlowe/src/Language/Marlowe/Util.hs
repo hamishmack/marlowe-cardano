@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 module Language.Marlowe.Util (ada, addAccountsDiff, emptyAccountsDiff, extractNonMerkleizedContractRoles,
                               foldMapNonMerkleizedContract, foldMapContract, getAccountsDiff, isEmptyAccountsDiff,
-                              merkleizedCase, merkleizedInput) where
+                              merkleizedCase, merkleizedInput, merklizeContract, merkleize) where
 import Data.List (foldl')
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
@@ -14,6 +14,7 @@ import Language.Marlowe.Semantics.Types
 import Ledger.Ada (adaSymbol, adaToken)
 import Ledger.Scripts (dataHash)
 import qualified Ledger.Value as Val
+import Plutus.V1.Ledger.Api (BuiltinByteString)
 import qualified PlutusTx
 import qualified PlutusTx.Prelude as P
 
@@ -118,14 +119,33 @@ extractNonMerkleizedContractRoles = foldMapNonMerkleizedContract extract extract
     fromPayee (Party party)   = fromParty party
     fromPayee (Account party) = fromParty party
 
+hash :: Contract -> BuiltinByteString
+hash = dataHash . PlutusTx.toBuiltinData
 
 merkleizedCase :: Action -> Contract -> Case Contract
-merkleizedCase action continuation = let
-    hash = dataHash (PlutusTx.toBuiltinData continuation)
-    in MerkleizedCase action hash
+merkleizedCase action continuation = MerkleizedCase action (hash continuation)
 
 merkleizedInput :: InputContent -> Contract -> Input
-merkleizedInput input continuation =
-  let builtin = PlutusTx.toBuiltinData continuation
-      hash = dataHash builtin
-   in MerkleizedInput input hash continuation
+merkleizedInput input continuation = MerkleizedInput input (hash continuation) continuation
+
+merkleize :: Contract -> Contract
+merkleize Close                      = Close
+merkleize (When cases timeout cont)  = When (map f cases) timeout (merkleize cont)
+  where
+    f (Case a x) = merkleizedCase a (merkleize x)
+    f x          = x
+merkleize (Pay accId p tok val cont) = Pay accId p tok val (merkleize cont)
+merkleize (If obs cont1 cont2)       = If obs (merkleize cont1) (merkleize cont2)
+merkleize (Let vId val cont)         = Let vId val (merkleize cont)
+merkleize (Assert obs cont)          = Assert obs (merkleize cont)
+
+merklizeContract :: Contract -> Map P.BuiltinByteString Contract
+merklizeContract = step
+  where
+    step c = singleton c <> go c
+
+    singleton c = let m = merkleize c in Map.singleton (hash m) m
+    go = foldMapNonMerkleizedContract (const mempty) extractCase (const mempty) (const mempty)
+
+    extractCase (Case _ c) = step c
+    extractCase _          = mempty
