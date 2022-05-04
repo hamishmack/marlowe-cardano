@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 module Language.Marlowe.Util (ada, addAccountsDiff, emptyAccountsDiff, extractNonMerkleizedContractRoles,
                               foldMapNonMerkleizedContract, foldMapContract, getAccountsDiff, isEmptyAccountsDiff,
-                              merkleizedCase, merkleizedInput, merklizeContract, merkleize) where
+                              merkleizedCase, merkleizedInput, merkleizeContract, merkleize) where
 import Data.List (foldl')
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
@@ -139,8 +139,8 @@ merkleize (If obs cont1 cont2)       = If obs (merkleize cont1) (merkleize cont2
 merkleize (Let vId val cont)         = Let vId val (merkleize cont)
 merkleize (Assert obs cont)          = Assert obs (merkleize cont)
 
-merklizeContract :: Contract -> Map P.BuiltinByteString Contract
-merklizeContract = step
+merkleizeContract :: Contract -> Map P.BuiltinByteString Contract
+merkleizeContract = step
   where
     step c = singleton c <> go c
 
