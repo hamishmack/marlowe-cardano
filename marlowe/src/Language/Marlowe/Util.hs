@@ -2,7 +2,10 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 module Language.Marlowe.Util (ada, addAccountsDiff, emptyAccountsDiff, extractNonMerkleizedContractRoles,
                               foldMapNonMerkleizedContract, foldMapContract, getAccountsDiff, isEmptyAccountsDiff,
-                              merkleizedCase, merkleizedInput, merkleizeContract, merkleize) where
+                              merkleizedCase, merkleizedInput, merkleize) where
+
+import Control.Monad.Writer (Writer, runWriter, tell)
+import Data.Functor ((<&>))
 import Data.List (foldl')
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
@@ -128,24 +131,22 @@ merkleizedCase action continuation = MerkleizedCase action (hash continuation)
 merkleizedInput :: InputContent -> Contract -> Input
 merkleizedInput input continuation = MerkleizedInput input (hash continuation) continuation
 
-merkleize :: Contract -> Contract
-merkleize Close                      = Close
-merkleize (When cases timeout cont)  = When (map f cases) timeout (merkleize cont)
+merkleize :: Contract -> Map BuiltinByteString Contract
+merkleize contract =
+  let (c, m) = runWriter $ merkleize' contract
+   in m <> Map.singleton (hash c) c
   where
-    f (Case a x) = merkleizedCase a (merkleize x)
-    f x          = x
-merkleize (Pay accId p tok val cont) = Pay accId p tok val (merkleize cont)
-merkleize (If obs cont1 cont2)       = If obs (merkleize cont1) (merkleize cont2)
-merkleize (Let vId val cont)         = Let vId val (merkleize cont)
-merkleize (Assert obs cont)          = Assert obs (merkleize cont)
-
-merkleizeContract :: Contract -> Map P.BuiltinByteString Contract
-merkleizeContract = step
-  where
-    step c = singleton c <> go c
-
-    singleton c = let m = merkleize c in Map.singleton (hash m) m
-    go = foldMapNonMerkleizedContract (const mempty) extractCase (const mempty) (const mempty)
-
-    extractCase (Case _ c) = step c
-    extractCase _          = mempty
+    merkleize' :: Contract -> Writer (Map BuiltinByteString Contract) Contract
+    merkleize' Close = pure Close
+    merkleize' (When cases timeout cont) = When <$> mapM f cases <*> pure timeout <*> merkleize' cont
+      where
+        f (Case a x) = do
+          y <- merkleize' x
+          let h = hash y
+          tell $ Map.singleton h y
+          return $ MerkleizedCase a h
+        f x = return x
+    merkleize' (Pay accId p tok val cont) = merkleize' cont <&> Pay accId p tok val
+    merkleize' (If obs cont1 cont2) = If obs <$> merkleize' cont1 <*> merkleize' cont2
+    merkleize' (Let vId val cont) = merkleize' cont <&> Let vId val
+    merkleize' (Assert obs cont) = merkleize' cont <&> Assert obs
