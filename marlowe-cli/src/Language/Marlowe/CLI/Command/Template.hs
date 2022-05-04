@@ -29,7 +29,7 @@ import Language.Marlowe.CLI.Examples (makeExample)
 import Language.Marlowe.Extended as E (AccountId, Contract (..), Party, Timeout, Token, Value (..), toCore)
 import Language.Marlowe.Semantics (MarloweData (..))
 import Language.Marlowe.Semantics.Types as C (Contract, State (..))
-import Language.Marlowe.Util (ada)
+import Language.Marlowe.Util (ada, merkleize)
 import Marlowe.Contracts (coveredCall, escrow, swap, trivial, zeroCouponBond)
 
 import qualified Options.Applicative as O
@@ -62,6 +62,7 @@ data TemplateCommand =
     , complaintDeadline :: Timeout  -- ^ The deadline for the buyer to complain.
     , disputeDeadline   :: Timeout  -- ^ The deadline for the seller to dispute a complaint.
     , mediationDeadline :: Timeout  -- ^ The deadline for the mediator to decide.
+    , merkleized        :: Bool     -- ^ Flag for merkleization.
     , contractFile      :: FilePath -- ^ The output JSON file representing the Marlowe contract.
     , stateFile         :: FilePath -- ^ The output JSON file representing the Marlowe contract's state.
     }
@@ -90,6 +91,7 @@ data TemplateCommand =
     , interest        :: Integer   -- ^ The interest.
     , lendingDeadline :: Timeout   -- ^ The lending deadline.
     , paybackDeadline :: Timeout   -- ^ The payback deadline.
+    , merkleized      :: Bool      -- ^ Flag for merkleization.
     , contractFile    :: FilePath  -- ^ The output JSON file representing the Marlowe contract.
     , stateFile       :: FilePath  -- ^ The output JSON file representing the Marlowe contract's state.
     }
@@ -106,6 +108,7 @@ data TemplateCommand =
     , issueDate      :: Timeout   -- ^ The issue date.
     , maturityDate   :: Timeout   -- ^ The maturity date.
     , settlementDate :: Timeout   -- ^ The settlement date.
+    , merkleized     :: Bool      -- ^ Flag for merkleization.
     , contractFile   :: FilePath  -- ^ The output JSON file representing the Marlowe contract.
     , stateFile      :: FilePath  -- ^ The output JSON file representing the Marlowe contract's state.
     }
@@ -115,7 +118,7 @@ data TemplateCommand =
 runTemplateCommand :: MonadIO m
                    => TemplateCommand  -- ^ The command.
                    -> m ()             -- ^ Action for runninng the command.
-runTemplateCommand TemplateTrivial{..}        = let marloweContract = makeContract $
+runTemplateCommand TemplateTrivial{..}        = let marloweContract = makeContract False $
                                                      trivial
                                                        party
                                                        depositLovelace
@@ -123,7 +126,7 @@ runTemplateCommand TemplateTrivial{..}        = let marloweContract = makeContra
                                                        timeout
                                                     marloweState = initialMarloweState bystander minAda
                                                  in makeExample contractFile stateFile MarloweData{..}
-runTemplateCommand TemplateEscrow{..}         = let marloweContract = makeContract $
+runTemplateCommand TemplateEscrow{..}         = let marloweContract = makeContract merkleized $
                                                       escrow
                                                         (Constant price)
                                                         seller
@@ -135,7 +138,7 @@ runTemplateCommand TemplateEscrow{..}         = let marloweContract = makeContra
                                                         mediationDeadline
                                                     marloweState = initialMarloweState mediator minAda
                                                  in makeExample contractFile stateFile MarloweData{..}
-runTemplateCommand TemplateSwap{..}           = let marloweContract = makeContract $
+runTemplateCommand TemplateSwap{..}           = let marloweContract = makeContract False $
                                                      swap
                                                        aParty
                                                        aToken
@@ -148,7 +151,7 @@ runTemplateCommand TemplateSwap{..}           = let marloweContract = makeContra
                                                        Close
                                                     marloweState = initialMarloweState aParty minAda
                                                  in makeExample contractFile stateFile MarloweData{..}
-runTemplateCommand TemplateZeroCouponBond{..} = let marloweContract = makeContract $
+runTemplateCommand TemplateZeroCouponBond{..} = let marloweContract = makeContract merkleized $
                                                      zeroCouponBond
                                                        lender
                                                        borrower
@@ -160,7 +163,7 @@ runTemplateCommand TemplateZeroCouponBond{..} = let marloweContract = makeContra
                                                        Close
                                                     marloweState = initialMarloweState lender minAda
                                                  in makeExample contractFile stateFile MarloweData{..}
-runTemplateCommand TemplateCoveredCall{..}    = let marloweContract = makeContract $
+runTemplateCommand TemplateCoveredCall{..}    = let marloweContract = makeContract merkleized $
                                                      coveredCall
                                                        issuer
                                                        counterparty
@@ -177,11 +180,13 @@ runTemplateCommand TemplateCoveredCall{..}    = let marloweContract = makeContra
 
 
 -- | Conversion from Extended to Core Marlowe.
-makeContract :: E.Contract -> C.Contract
-makeContract = errorHandling . toCore
-  where
-    errorHandling (Just contract) = contract
-    errorHandling Nothing         = error "Conversion from Extended to Core Marlowe failed!"
+makeContract :: Bool -> E.Contract -> C.Contract
+makeContract True  = snd . head . merkleize . errorHandling . toCore
+makeContract False = errorHandling . toCore
+
+errorHandling :: Maybe C.Contract -> C.Contract
+errorHandling (Just contract) = contract
+errorHandling Nothing         = error "Conversion from Extended to Core Marlowe failed!"
 
 
 -- | Build the initial Marlowe state.
@@ -251,6 +256,7 @@ templateEscrowOptions =
     <*> O.option parseTimeout (O.long "complaint-deadline" <> O.metavar "POSIX_TIME"    <> O.help "The deadline for the buyer to complain, in POSIX milliseconds."            )
     <*> O.option parseTimeout (O.long "dispute-deadline"   <> O.metavar "POSIX_TIME"    <> O.help "The deadline for the seller to dispute a complaint, in POSIX milliseconds.")
     <*> O.option parseTimeout (O.long "mediation-deadline" <> O.metavar "POSIX_TIME"    <> O.help "The deadline for the mediator to decide, in POSIX milliseconds."           )
+    <*> O.switch              (O.long "merkleized"         <>                              O.help "Flag, if the contract should be merkleized."                               )
     <*> O.strOption           (O.long "out-contract-file"  <> O.metavar "CONTRACT_FILE" <> O.help "JSON output file for the contract."                                        )
     <*> O.strOption           (O.long "out-state-file"     <> O.metavar "STATE_FILE"    <> O.help "JSON output file for the contract's state."                                )
 
@@ -299,6 +305,7 @@ templateZeroCouponBondOptions =
     <*> O.option O.auto       (O.long "interest"           <> O.metavar "INTEGER"       <> O.help "The interest, in lovelace."                                )
     <*> O.option parseTimeout (O.long "lending-deadline"   <> O.metavar "POSIX_TIME"    <> O.help "The lending deadline, in POSIX milliseconds."              )
     <*> O.option parseTimeout (O.long "repayment-deadline" <> O.metavar "POSIX_TIME"    <> O.help "The repayment deadline, in POSIX milliseconds."            )
+    <*> O.switch              (O.long "merkleized"         <>                              O.help "Flag, if the contract should be merkleized."               )
     <*> O.strOption           (O.long "out-contract-file"  <> O.metavar "CONTRACT_FILE" <> O.help "JSON output file for the contract."                        )
     <*> O.strOption           (O.long "out-state-file"     <> O.metavar "STATE_FILE"    <> O.help "JSON output file for the contract's state."                )
 
@@ -325,5 +332,6 @@ templateCoveredCallOptions =
     <*> O.option parseTimeout (O.long "issue-date"        <> O.metavar "POSIX_TIME"    <> O.help "The issue date, in POSIX milliseconds."                     )
     <*> O.option parseTimeout (O.long "maturity-date"     <> O.metavar "POSIX_TIME"    <> O.help "The maturity date, in POSIX milliseconds."                  )
     <*> O.option parseTimeout (O.long "settlement-date"   <> O.metavar "POSIX_TIME"    <> O.help "The settlement date, in POSIX milliseconds."                )
+    <*> O.switch              (O.long "merkleized"        <>                              O.help "Flag, if the contract should be merkleized."                )
     <*> O.strOption           (O.long "out-contract-file" <> O.metavar "CONTRACT_FILE" <> O.help "JSON output file for the contract."                         )
     <*> O.strOption           (O.long "out-state-file"    <> O.metavar "STATE_FILE"    <> O.help "JSON output file for the contract's state."                 )
