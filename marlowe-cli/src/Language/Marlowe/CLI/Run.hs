@@ -61,7 +61,7 @@ import Language.Marlowe.CLI.Types (CliError (..), DatumInfo (..), MarloweTransac
 import Language.Marlowe.Semantics (MarloweParams (rolesCurrency), Payment (..), TransactionInput (..),
                                    TransactionOutput (..), TransactionWarning, computeTransaction)
 import Language.Marlowe.Semantics.Types (AccountId, ChoiceId (..), ChoiceName, ChosenNum, Contract, Input (..),
-                                        InputContent (..), Party (..), Payee (..), State (accounts), Token (..))
+                                         InputContent (..), Party (..), Payee (..), State (accounts), Token (..))
 import Language.Marlowe.Util (merkleizedInput)
 import Ledger.TimeSlot (SlotConfig, posixTimeToEnclosingSlot)
 import Ledger.Tx.CardanoAPI (toCardanoAddress, toCardanoScriptDataHash, toCardanoValue)
