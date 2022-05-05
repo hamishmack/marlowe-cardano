@@ -29,7 +29,7 @@ import Language.Marlowe.CLI.Examples (makeExample)
 import Language.Marlowe.Extended as E (AccountId, Contract (..), Party, Timeout, Token, Value (..), toCore)
 import Language.Marlowe.Semantics (MarloweData (..))
 import Language.Marlowe.Semantics.Types as C (Contract, State (..))
-import Language.Marlowe.Util (ada, merkleize)
+import Language.Marlowe.Util (ada)
 import Marlowe.Contracts (coveredCall, escrow, swap, trivial, zeroCouponBond)
 
 import qualified Options.Applicative as O
@@ -118,15 +118,15 @@ data TemplateCommand =
 runTemplateCommand :: MonadIO m
                    => TemplateCommand  -- ^ The command.
                    -> m ()             -- ^ Action for runninng the command.
-runTemplateCommand TemplateTrivial{..}        = let marloweContract = makeContract False $
+runTemplateCommand TemplateTrivial{..}        = let marloweContract = makeContract $
                                                      trivial
                                                        party
                                                        depositLovelace
                                                        withdrawalLovelace
                                                        timeout
                                                     marloweState = initialMarloweState bystander minAda
-                                                 in makeExample contractFile stateFile MarloweData{..}
-runTemplateCommand TemplateEscrow{..}         = let marloweContract = makeContract merkleized $
+                                                 in makeExample False contractFile stateFile MarloweData{..}
+runTemplateCommand TemplateEscrow{..}         = let marloweContract = makeContract $
                                                       escrow
                                                         (Constant price)
                                                         seller
@@ -137,8 +137,8 @@ runTemplateCommand TemplateEscrow{..}         = let marloweContract = makeContra
                                                         disputeDeadline
                                                         mediationDeadline
                                                     marloweState = initialMarloweState mediator minAda
-                                                 in makeExample contractFile stateFile MarloweData{..}
-runTemplateCommand TemplateSwap{..}           = let marloweContract = makeContract False $
+                                                 in makeExample merkleized contractFile stateFile MarloweData{..}
+runTemplateCommand TemplateSwap{..}           = let marloweContract = makeContract $
                                                      swap
                                                        aParty
                                                        aToken
@@ -150,8 +150,8 @@ runTemplateCommand TemplateSwap{..}           = let marloweContract = makeContra
                                                        bTimeout
                                                        Close
                                                     marloweState = initialMarloweState aParty minAda
-                                                 in makeExample contractFile stateFile MarloweData{..}
-runTemplateCommand TemplateZeroCouponBond{..} = let marloweContract = makeContract merkleized $
+                                                 in makeExample False contractFile stateFile MarloweData{..}
+runTemplateCommand TemplateZeroCouponBond{..} = let marloweContract = makeContract $
                                                      zeroCouponBond
                                                        lender
                                                        borrower
@@ -162,8 +162,8 @@ runTemplateCommand TemplateZeroCouponBond{..} = let marloweContract = makeContra
                                                        ada
                                                        Close
                                                     marloweState = initialMarloweState lender minAda
-                                                 in makeExample contractFile stateFile MarloweData{..}
-runTemplateCommand TemplateCoveredCall{..}    = let marloweContract = makeContract merkleized $
+                                                 in makeExample merkleized contractFile stateFile MarloweData{..}
+runTemplateCommand TemplateCoveredCall{..}    = let marloweContract = makeContract $
                                                      coveredCall
                                                        issuer
                                                        counterparty
@@ -176,17 +176,16 @@ runTemplateCommand TemplateCoveredCall{..}    = let marloweContract = makeContra
                                                        maturityDate
                                                        settlementDate
                                                     marloweState = initialMarloweState issuer minAda
-                                                 in makeExample contractFile stateFile MarloweData{..}
+                                                 in makeExample merkleized contractFile stateFile MarloweData{..}
 
 
 -- | Conversion from Extended to Core Marlowe.
-makeContract :: Bool -> E.Contract -> C.Contract
-makeContract True  = snd . head . merkleize . errorHandling . toCore
-makeContract False = errorHandling . toCore
-
-errorHandling :: Maybe C.Contract -> C.Contract
-errorHandling (Just contract) = contract
-errorHandling Nothing         = error "Conversion from Extended to Core Marlowe failed!"
+makeContract :: E.Contract -> C.Contract
+makeContract = errorHandling . toCore
+  where
+    errorHandling :: Maybe C.Contract -> C.Contract
+    errorHandling (Just contract) = contract
+    errorHandling Nothing         = error "Conversion from Extended to Core Marlowe failed!"
 
 
 -- | Build the initial Marlowe state.

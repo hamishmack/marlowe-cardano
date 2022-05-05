@@ -134,7 +134,7 @@ merkleizedInput input continuation = MerkleizedInput input (hash continuation) c
 merkleize :: Contract -> [(BuiltinByteString, Contract)]
 merkleize contract =
   let (c, m) = runWriter $ merkleize' contract
-   in reverse $ m <> [(hash c, c)]
+   in (hash c, c) : reverse m
   where
     merkleize' :: Contract -> Writer [(BuiltinByteString, Contract)] Contract
     merkleize' Close = pure Close

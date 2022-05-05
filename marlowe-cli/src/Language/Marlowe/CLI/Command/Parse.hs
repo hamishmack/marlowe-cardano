@@ -313,7 +313,7 @@ parseInputContent =
         INotify
           <$ O.flag' () (O.long "notify" <> O.help "Notify the contract.")
       parseFilePath =
-        (O.optional . O.strOption) (O.long "contract-stub-file" <> O.metavar "CONTRACT_FILE" <> O.help "The contract stub for merkelized actions.")
+        (O.optional . O.strOption) (O.long "merkleized-contract-continuation-file" <> O.metavar "CONTRACT_FILE" <> O.help "The contract stub for merkelized actions.")
 
 
 
