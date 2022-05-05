@@ -276,7 +276,7 @@ echo "## Transaction 2. Lender Deposits the Loan Amount"
 
 echo "First we compute the Marlowe input required to deposit the funds for the loan."
 
-merkleized_then=`jq '.[0][1].when[0].merkleized_then' tx-1.merkleized`
+merkleized_then=$(jq '.[0][1].when[0].merkleized_then' tx-1.merkleized)
 jq ".[] | select (.[0] == $merkleized_then) | .[1]" tx-1.merkleized > tx-2.contract
 
 marlowe-cli run prepare --marlowe-file tx-1.marlowe           \
@@ -354,7 +354,7 @@ echo "## Transaction 4. Borrower Repays the Loan's Principal and Interest"
 
 echo "First we compute the Marlowe input required to replay the funds for the loan."
 
-merkleized_then=`jq '.then.when[0].merkleized_then' tx-2.contract`
+merkleized_then=$(jq '.then.when[0].merkleized_then' tx-2.contract)
 jq ".[] | select (.[0] == $merkleized_then) | .[1]" tx-1.merkleized > tx-3.contract
 
 marlowe-cli run prepare --marlowe-file tx-2.marlowe                \
